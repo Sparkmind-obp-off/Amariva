@@ -1,0 +1,8 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "amariva-local",
+  "compatibility_date": "2026-10-07",
+  "pages_build_output_dir": "./dist",
+  "vars": { "PUBLIC_ORIGIN": "http://localhost:3000", "PAYMENT_PROVIDER": "disabled", "COMMERCE_ENABLED": "false", "LEGAL_READY": "false" },
+  "d1_databases": [{ "binding": "DB", "database_name": "amariva-local", "database_id": "00000000-0000-0000-0000-000000000001", "migrations_dir": "migrations" }]
+}

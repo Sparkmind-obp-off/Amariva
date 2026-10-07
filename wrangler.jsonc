@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "amariva",
+  "compatibility_date": "2026-10-07",
+  "pages_build_output_dir": "./dist",
+  "vars": {
+    "PUBLIC_ORIGIN": "https://amariva.pages.dev",
+    "PAYMENT_PROVIDER": "disabled",
+    "COMMERCE_ENABLED": "false",
+    "LEGAL_READY": "false"
+  }
+  // Production DB deliberately absent: account D1 quota is full.
+  // After creating an isolated amariva-production database, add:
+  // "d1_databases": [{"binding":"DB","database_name":"amariva-production","database_id":"REAL_ID","migrations_dir":"migrations"}]
+}

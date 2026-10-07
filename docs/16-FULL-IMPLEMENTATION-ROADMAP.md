@@ -325,3 +325,11 @@ The first real completion milestone is:
 **A stranger discovers AMARIVA → lands on useful content/tool → uses it → receives value → sees a relevant paid offer → purchases → receives the promised value → returns or expands → data is captured → system produces a next action.**
 
 That is the first complete business loop.
+
+## Implementation checkpoint — 2026-10-07
+
+The original roadmap above remains the strategic target. Current code ships a real SSR public foundation, ungated pricing/margin/BEP calculator, four supporting articles, one truthful paid-offer page, real private toolkit asset and checkout/identity/webhook/fulfillment boundaries. D1 event/capture/admin behavior is tested locally with 42 passing tests; responsive browser checks pass at 1440/390/320 pixels.
+
+Production D1 is blocked by account database quota. Commerce/email are disabled pending storage, eligible provider credentials, verified sender and real operator legal/policy facts. No live purchase, revenue, retention uplift or scaled demand is asserted. Baseline experiment and next-action records are prepared; measurable optimization and scale have not started.
+
+See [implementation architecture and phase gaps](18-IMPLEMENTATION-ARCHITECTURE.md), [activation/deployment](19-DEPLOYMENT-ENVIRONMENT.md), and [launch gates](20-TESTING-LAUNCH.md). Do not mark Phase 6 or the overall loop complete until an actual operator-approved production purchase and promised delivery are verified.

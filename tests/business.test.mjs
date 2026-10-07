@@ -1,0 +1,23 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { calculatePricing, validateEmail, canSettle, paymentMinorUnits, browserEvents } from '../public/static/calculator.mjs';
+import { verifyStripeSignature, constantEqual, sanitizeDimension, safePath } from '../src/security.mjs';
+const base={cost:25000,price:50000,fee:5,fixed:2000000,units:200};
+test('pricing reference example: fees, contribution, margin, BEP, profit',()=>{const r=calculatePricing(base);assert.equal(r.feePerUnit,2500);assert.equal(r.contribution,22500);assert.equal(r.margin,45);assert.equal(r.breakEven,89);assert.equal(r.profit,2500000);assert.equal(Math.ceil(r.minimumPrice),36843);});
+test('zero and negative contributions have no reachable BEP',()=>{assert.equal(calculatePricing({...base,cost:50000,fee:0}).breakEven,null);assert.equal(calculatePricing({...base,cost:60000}).safe,false);});
+test('zero fixed costs require zero units for operational break-even',()=>assert.equal(calculatePricing({...base,fixed:0}).breakEven,0));
+test('low volume scenario is loss making',()=>assert.equal(calculatePricing({...base,units:80}).profit,-200000));
+test('discount example needs 127 units for same contribution',()=>{const r=calculatePricing({...base,price:45000});assert.equal(r.contribution,17750);assert.equal(Math.ceil(2250000/r.contribution),127);});
+for(const [name,value] of [['cost',-1],['price',0],['units',0],['units',1.5],['fee',100],['cost',NaN],['fixed',Infinity],['cost','25000'],['price',1e13],['units',1e8]])test(`reject invalid ${name}: ${value}`,()=>assert.throws(()=>calculatePricing({...base,[name]:value})));
+test('decimal inputs remain supported and finite',()=>assert.ok(Number.isFinite(calculatePricing({...base,cost:25000.75,fee:5.25}).profit)));
+test('email validation rejects unsafe/invalid types',()=>{assert.ok(validateEmail('buyer@example.com'));for(const x of ['x','a@b',null,3,'a b@example.com','a'.repeat(260)+'@x.com'])assert.equal(validateEmail(x),false);});
+test('IDR Stripe amounts are minor units, not displayed rupiah',()=>{assert.equal(paymentMinorUnits(99000,'idr'),9900000);assert.throws(()=>paymentMinorUnits(99000,'usd'));});
+const order={id:'order-1',status:'checkout',amount:99000,currency:'idr'};
+const session={payment_status:'paid',amount_total:9900000,currency:'idr',metadata:{order_id:'order-1'},livemode:true};
+test('valid verified payment can settle',()=>assert.equal(canSettle(order,session,true),true));
+test('amount, currency, mode, ownership and state are checked',()=>{for(const patch of [{amount_total:99000},{currency:'usd'},{payment_status:'unpaid'},{metadata:{order_id:'other'}},{livemode:false}])assert.equal(canSettle(order,{...session,...patch},true),false);for(const status of ['paid','refunded','expired'])assert.equal(canSettle({...order,status},session,true),false);});
+test('revenue and delivery cannot be emitted by browser',()=>{for(const name of ['purchase','delivery_complete','activation','lead_created','checkout_start'])assert.equal(browserEvents.includes(name),false);});
+async function signature(body,secret,t) {const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);const bytes=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(`${t}.${body}`));return Array.from(new Uint8Array(bytes)).map(v=>v.toString(16).padStart(2,'0')).join('');}
+test('webhook HMAC accepts authentic payload and secret rotation signatures',async()=>{const raw='{"id":"evt_verified"}',t=1234567,s=await signature(raw,'test-only',t);assert.equal(await verifyStripeSignature(raw,`t=${t},v1=bad,v1=${s}`,'test-only',t),true);});
+test('webhook rejects tampering, expiry, duplicate timestamps, and missing secret',async()=>{const raw='{"id":"evt_verified"}',t=1234567,s=await signature(raw,'test-only',t);assert.equal(await verifyStripeSignature(raw+'x',`t=${t},v1=${s}`,'test-only',t),false);assert.equal(await verifyStripeSignature(raw,`t=${t},v1=${s}`,'test-only',t+301),false);assert.equal(await verifyStripeSignature(raw,`t=${t},t=${t},v1=${s}`,'test-only',t),false);assert.equal(await verifyStripeSignature(raw,`t=${t},v1=${s}`,'',t),false);});
+test('constant-time comparison and analytics dimensions',()=>{assert.equal(constantEqual('abc','abc'),true);assert.equal(constantEqual('abc','abd'),false);assert.equal(safePath('/tools/kalkulator-harga-jual'),'/tools/kalkulator-harga-jual');assert.equal(safePath('/account?email=secret'),'/');assert.equal(sanitizeDimension('email@test.com'),'emailtestcom');});
